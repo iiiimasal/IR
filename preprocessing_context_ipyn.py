@@ -15,6 +15,8 @@ nltk.download('stopwords', download_dir='/usr/local/nltk_data')
 import nltk
 nltk.download('wordnet', download_dir='/usr/local/nltk_data')
 
+!pip install wikipedia-api
+
 import nltk
 import string
 from nltk.corpus import stopwords
@@ -106,3 +108,73 @@ if response.status_code == 200:
             print(f"Invalid Wikipedia URL: {url}")
 else:
     print("Failed to fetch file:", response.status_code)
+
+def preprocess_persian_text(text):
+    # 1. Normalize text
+    text = normalizer.normalize(text)
+
+    # 2. Tokenize
+    tokens = word_tokenize(text)
+
+    # 3. Remove stopwords
+    tokens = [word for word in tokens if word not in stopwords and word not in punctuation]
+    # 4. Lemmatization (reduce words to their base form)
+    lemmatized_tokens = [lemmatizer.lemmatize(word) for word in tokens]
+
+    return lemmatized_tokens  # Return processed tokens
+
+from hazm import Normalizer, word_tokenize, Lemmatizer, stopwords_list
+import string
+# Initialize hazm tools
+normalizer = Normalizer()
+lemmatizer = Lemmatizer()
+stopwords = set(stopwords_list())  # Load Persian stopwords
+print(stopwords)
+punctuation = set(string.punctuation)
+
+import wikipediaapi
+import requests
+
+# Initialize Wikipedia API for Persian
+user_agent = "your-application-name/1.0 (your-email@example.com)"
+wiki = wikipediaapi.Wikipedia(language='fa', user_agent=user_agent)
+
+# Function to fetch Wikipedia content
+def get_wikipedia_persian_content(title):
+    formatted_title = title.strip().replace(" ", "_")  # Remove spaces and replace with underscores
+    page = wiki.page(formatted_title)
+
+    if page.exists():
+        return page.text  # Return full content
+    else:
+        print(f"Page not found for title: {title} (Formatted: {formatted_title})")
+        return None
+
+# URL of the raw text file on GitHub (which contains Wikipedia titles)
+url = "https://raw.githubusercontent.com/iiiimasal/IR/master/source_file_persian"
+
+# Fetch the file containing Wikipedia titles
+response = requests.get(url)
+if response.status_code == 200:
+    titles = response.text.splitlines()  # Convert text into a list of titles
+    print("Fetched Titles:", [repr(title) for title in titles])  # Show raw format for debugging
+
+    # Loop through titles and fetch content from Wikipedia
+    for title in titles:
+        title = title.strip()  # Remove extra spaces
+        if title:
+            content = get_wikipedia_persian_content(title)
+            if content:
+                print(f"Content from {title}:")
+                #print(content[:500])  # Print only the first 500 characters for preview
+                print(preprocess_persian_text(content))
+
+                print("="*100)
+            else:
+                print(f"Failed to fetch content from {title}")
+        else:
+            print("Invalid Wikipedia title (empty)")
+else:
+    print("Failed to fetch file:", response.status_code)
+
+!pip install hazm
